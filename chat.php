@@ -5,10 +5,10 @@
 <?php
 // chat.php - Chat Page
 session_start();
-// if (!isset($_SESSION['user_id'])) {
-//     header('Location: login.php');
-//     exit;
-// }
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
 require 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -47,10 +47,4 @@ $messages = $pdo->query("SELECT m.message, m.created_at, u.username FROM message
 </body>
 </html>
 
-<?php
-// logout.php - User Logout
-session_start();
-session_destroy();
-header('Location: login.php');
-exit;
-?>
+
