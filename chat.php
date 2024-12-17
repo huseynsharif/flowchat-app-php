@@ -1,8 +1,3 @@
-
-
-
-
-
 <?php
 // chat.php - Chat Page
 session_start();
@@ -11,40 +6,51 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 require 'db.php';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $message = $_POST['message'];
-    $stmt = $pdo->prepare("INSERT INTO messages (user_id, message, created_at) VALUES (?, ?, NOW())");
-    $stmt->execute([$_SESSION['user_id'], $message]);
-
-    header('Location: chat.php');
-    exit;
-}
-
-$messages = $pdo->query("SELECT m.message, m.created_at, u.username FROM messages m JOIN users u ON m.user_id = u.id ORDER BY m.created_at DESC")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html>
 <head>
     <title>Chat</title>
     <link rel="stylesheet" href="chat.css">
+
 </head>
 <body>
+    <div id="root"></div>
+
     <h1>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h1>
-    <div class="chat-box">
-        <?php foreach ($messages as $msg): ?>
-            <div class="message">
-                <strong><?php echo htmlspecialchars($msg['username']); ?>:</strong>
-                <?php echo htmlspecialchars($msg['message']); ?>
-                <em>(<?php echo $msg['created_at']; ?>)</em>
-            </div>
-        <?php endforeach; ?>
-    </div>
-    <form method="POST" action="chat.php">
-        <input type="text" name="message" placeholder="Type a message..." required>
-        <button type="submit">Send</button>
+    
+    <form id="message-form">
+        <input type="text" id="message" placeholder="Type a message..." required>
+        <button type="submit" id="send">Send</button>
     </form>
     <a href="logout.php">Logout</a>
+
+    <script>
+        const ws = new WebSocket("ws://localhost:8080");
+
+        ws.onopen = function() {
+            console.log("WebSocket bağlantısı quruldu");
+        };
+
+        ws.onmessage = function(event) {
+            // const messages = document.getElementById("messages");
+            // const li = document.createElement("li");
+            // li.textContent = "Gələn mesaj: " + event.data;
+            // messages.appendChild(li);
+
+            console.log(event.data);
+            
+        };
+
+        function sendMessage() {
+            const input = document.getElementById("message");
+            ws.send(input.value);
+            input.value = '';
+        }
+
+        var btn = document.getElementById("send")
+        btn.addEventListener("click", sendMessage);
+    </script>
 </body>
 </html>
 
