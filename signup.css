@@ -1,0 +1,79 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Background Styling */
+body {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #333;
+}
+
+/* Form Styling */
+form {
+    background: white;
+    padding: 25px 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+/* Input Fields */
+input[type="text"], input[type="email"], input[type="password"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s, background-color 0.3s;
+}
+
+/* Input Focus */
+input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus {
+    border-color: #f5576c;
+    outline: none;
+    background-color: #fffdf8;
+}
+
+/* Button Styling */
+button {
+    background: #f5576c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 12px 15px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.3s, transform 0.2s;
+}
+
+button:hover {
+    background: #f093fb;
+    transform: scale(1.05);
+}
+
+button:active {
+    transform: scale(1);
+}
+
+/* Placeholder Styling */
+input::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+/* Form Spacing */
+form > *:not(:last-child) {
+    margin-bottom: 15px;
+}
