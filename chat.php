@@ -2,6 +2,7 @@
 
 
 
+
 <?php
 // chat.php - Chat Page
 session_start();
@@ -15,6 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $message = $_POST['message'];
     $stmt = $pdo->prepare("INSERT INTO messages (user_id, message, created_at) VALUES (?, ?, NOW())");
     $stmt->execute([$_SESSION['user_id'], $message]);
+
+    header('Location: chat.php');
+    exit;
 }
 
 $messages = $pdo->query("SELECT m.message, m.created_at, u.username FROM messages m JOIN users u ON m.user_id = u.id ORDER BY m.created_at DESC")->fetchAll();
@@ -23,10 +27,7 @@ $messages = $pdo->query("SELECT m.message, m.created_at, u.username FROM message
 <html>
 <head>
     <title>Chat</title>
-    <style>
-        .chat-box { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
-        .message { margin: 5px 0; }
-    </style>
+    <link rel="stylesheet" href="chat.css">
 </head>
 <body>
     <h1>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h1>
@@ -46,5 +47,6 @@ $messages = $pdo->query("SELECT m.message, m.created_at, u.username FROM message
     <a href="logout.php">Logout</a>
 </body>
 </html>
+
 
 
