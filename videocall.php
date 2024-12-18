@@ -6,128 +6,130 @@ $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Unknown User
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Call</title>
+    <title>Group Video Call</title>
     <style>
-        video { width: 45%; margin: 10px; border: 1px solid #ccc; }
-        #videos { display: flex; justify-content: center; }
+        .videos { display: flex; flex-wrap: wrap; gap: 10px; }
+        .video-container { text-align: center; }
+        video { width: 300px; height: 200px; border: 1px solid #ccc; }
+        .username { font-weight: bold; margin-top: 5px; }
     </style>
-        <link rel="stylesheet" href="videostyle.css">
-
 </head>
 <body>
-<h1>Video Call</h1>
-    <div class="videos">
-        <div class="video-container">
-            <video id="localVideo" autoplay muted></video>
-            <div class="username">
-                <?php echo htmlspecialchars($_SESSION['username']); ?> <!-- Yerli istifadəçi adı -->
-            </div>
-        </div>
-        
-        <div class="video-container">
-            <video id="remoteVideo" autoplay></video>
-            <div class="username" id="remote-username">
-                Remote User
-            </div>
-        </div>
-    </div>
+    <h1>Group Video Call</h1>
+    <div class="videos" id="videos"></div>
+
     <script>
-        const username = "<?php echo $_SESSION['username']; ?>";
-        const localVideo = document.getElementById('localVideo');
-        const remoteVideo = document.getElementById('remoteVideo');
-        const remoteUsernameDiv = document.getElementById('remote-username');
+        const ws = new WebSocket("ws://localhost:8081");
+        const localVideo = document.createElement("video");
+        localVideo.autoplay = true;
+        localVideo.muted = true;
 
-        const ws = new WebSocket("ws://localhost:8080");
+        const videosContainer = document.getElementById("videos");
+        videosContainer.appendChild(createVideoContainer(localVideo, "You"));
+
+        const peers = {};
         let localStream;
-        let peerConnection;
-        const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-        ws.onmessage = (message) => {
-            const data = JSON.parse(message.data);
+        function createVideoContainer(videoElement, username) {
+            const container = document.createElement("div");
+            container.classList.add("video-container");
 
-            switch (data.type) {
-                case 'offer':
-                    handleOffer(data.offer, data.username);
-                    break;
-                case 'answer':
-                    handleAnswer(data.answer);
-                    break;
-                case 'candidate':
-                    handleCandidate(data.candidate);
-                    break;
-            }
-        };
+            const nameLabel = document.createElement("div");
+            nameLabel.classList.add("username");
+            nameLabel.textContent = username;
+
+            container.appendChild(videoElement);
+            container.appendChild(nameLabel);
+
+            return container;
+        }
 
         navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             .then(stream => {
                 localStream = stream;
                 localVideo.srcObject = stream;
-            })
-            .catch(error => console.error('Media Error:', error));
 
-        function createPeerConnection() {
-            peerConnection = new RTCPeerConnection(config);
+                ws.onopen = () => console.log("WebSocket bağlantısı quruldu.");
 
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                ws.onmessage = async (message) => {
+                    const data = JSON.parse(message.data);
 
-            peerConnection.onicecandidate = ({ candidate }) => {
-                if (candidate) {
-                    ws.send(JSON.stringify({ type: 'candidate', candidate, username: username }));
+                    switch (data.type) {
+                        case "join":
+                            if (!peers[data.from]) { // PeerConnection təkrar yaradılmasın
+                                await createOffer(data.from);
+                            }
+                            break;
+                        case "offer":
+                            if (!peers[data.from]) {
+                                await handleOffer(data.offer, data.from);
+                            }
+                            break;
+                        case "answer":
+                            await handleAnswer(data.answer, data.from);
+                            break;
+                        case "candidate":
+                            if (peers[data.from]) {
+                                await peers[data.from].addIceCandidate(new RTCIceCandidate(data.candidate));
+                            }
+                            break;
+                    }
+                };
+            });
+
+        function createPeerConnection(id) {
+            if (peers[id]) return peers[id]; // Əgər artıq bağlantı varsa geri qaytar
+
+            const peerConnection = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            });
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate, to: id }));
                 }
             };
 
             peerConnection.ontrack = (event) => {
-                remoteVideo.srcObject = event.streams[0];
+                if (!document.getElementById(`video-${id}`)) { // Təkrar video yaratmamaq üçün yoxlayırıq
+                    const remoteVideo = document.createElement("video");
+                    remoteVideo.autoplay = true;
+                    remoteVideo.id = `video-${id}`;
+                    videosContainer.appendChild(createVideoContainer(remoteVideo, `User ${id}`));
+                    remoteVideo.srcObject = event.streams[0];
+                }
             };
+
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            peers[id] = peerConnection; // PeerConnection-u yadda saxlayırıq
+            return peerConnection;
         }
 
-        function makeCall() {
-            createPeerConnection();
+        async function createOffer(id) {
+            const peerConnection = createPeerConnection(id);
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
 
-            peerConnection.createOffer()
-                .then(offer => {
-                    peerConnection.setLocalDescription(offer);
-                    ws.send(JSON.stringify({ type: 'offer', offer, username: username }));
-                });
+            ws.send(JSON.stringify({ type: "offer", offer, to: id }));
         }
 
-        function handleOffer(offer, remoteUsername) {
-            if (peerConnection.signalingState !== "stable") {
-                console.warn("Connection is not stable, ignoring new offer.");
-                return;
-            }
+        async function handleOffer(offer, from) {
+            const peerConnection = createPeerConnection(from);
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
 
-            createPeerConnection();
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
 
-            peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
-                .then(() => {
-                    console.log("Remote offer set successfully.");
-                    return peerConnection.createAnswer();
-                })
-                .then(answer => {
-                    peerConnection.setLocalDescription(answer);
-                    ws.send(JSON.stringify({ type: 'answer', answer, username: username }));
-                    console.log("Local answer sent.");
-                })
-                .catch(error => {
-                    console.error("Error handling offer:", error);
-                });
-
-            remoteUsernameDiv.textContent = remoteUsername;
+            ws.send(JSON.stringify({ type: "answer", answer, to: from }));
         }
 
-
-        function handleAnswer(answer) {
-            peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        async function handleAnswer(answer, from) {
+            await peers[from].setRemoteDescription(new RTCSessionDescription(answer));
         }
 
-        function handleCandidate(candidate) {
-            peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-        }
-
-        setTimeout(makeCall, 1000);
     </script>
 </body>
 </html>
-
