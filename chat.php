@@ -5,6 +5,11 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
+
+if (isset($_POST['videocall'])) {
+    header('Location: videocall.php');
+    exit;
+}
 require 'db.php';
 
 
@@ -38,6 +43,8 @@ try {
         <input type="text" id="message" placeholder="Type a message..." required>
         <button type="submit" id="send">Send</button>
     </form>
+    <button id="video">VideoCall</button>
+
     <a href="logout.php">Logout</a>
 
     <script>
@@ -77,9 +84,13 @@ try {
         }
 
         var btn = document.getElementById("send")
+        var btnVideo = document.getElementById("video")
         btn.addEventListener("click", sendMessage);
+        btnVideo.addEventListener("click", goToVideoCall);
 
-
+        function goToVideoCall() {
+            window.location.href = "videocall.php";
+        }
         function addMessage(username2, message, time) {
             const chatBox = document.getElementById("chat-box");
 

@@ -1,45 +1,55 @@
 <?php
+require __DIR__ . '/vendor/autoload.php';
 
-$host = 'localhost';
-$port = 8081;
+use Ratchet\MessageComponentInterface;
+use Ratchet\ConnectionInterface;
 
-$socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-socket_bind($socket, $host, $port);
-socket_listen($socket);
+class VideoCallServer implements MessageComponentInterface {
+    protected $clients;
 
-$clients = []; // Bağlı müştəriləri izləmək üçün
-
-echo "WebSocket server started at ws://$host:$port\n";
-
-while (true) {
-    $read = $clients;
-    $read[] = $socket;
-
-    socket_select($read, $write, $except, 0);
-
-    if (in_array($socket, $read)) {
-        $newClient = socket_accept($socket);
-        $clients[] = $newClient;
-        echo "Yeni müştəri bağlandı.\n";
-        unset($read[array_search($socket, $read)]);
+    public function __construct() {
+        $this->clients = new \SplObjectStorage;
     }
 
-    foreach ($read as $client) {
-        $data = socket_read($client, 2048);
-        if (!$data) {
-            unset($clients[array_search($client, $clients)]);
-            echo "Müştəri bağlantısı kəsildi.\n";
-            continue;
-        }
+    public function onOpen(ConnectionInterface $conn) {
+        $this->clients->attach($conn);
+        echo "Yeni müştəri qoşuldu ({$conn->resourceId})\n";
+    }
 
-        // Signaling mesajlarını yönləndir
-        foreach ($clients as $otherClient) {
-            if ($otherClient !== $client) {
-                socket_write($otherClient, $data, strlen($data));
+    public function onMessage(ConnectionInterface $from, $msg) {
+        echo "Mesaj alındı: {$msg}\n";
+
+        // Gələn siqnal məlumatını digər müştərilərə ötür
+        foreach ($this->clients as $client) {
+            if ($from !== $client) { // Özünə göndərmə
+                $client->send($msg);
             }
         }
     }
+
+    public function onClose(ConnectionInterface $conn) {
+        $this->clients->detach($conn);
+        echo "Müştəri ayrıldı ({$conn->resourceId})\n";
+    }
+
+    public function onError(ConnectionInterface $conn, \Exception $e) {
+        echo "Xəta: {$e->getMessage()}\n";
+        $conn->close();
+    }
 }
 
-socket_close($socket);
-?>
+use Ratchet\Server\IoServer;
+use Ratchet\WebSocket\WsServer;
+use Ratchet\Http\HttpServer;
+
+$server = IoServer::factory(
+    new HttpServer(
+        new WsServer(
+            new VideoCallServer()
+        )
+    ),
+    8081 // Port nömrəsi
+);
+
+echo "Video zəng serveri 8081 portunda işə düşdü...\n";
+$server->run();
