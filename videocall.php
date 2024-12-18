@@ -1,6 +1,5 @@
 <?php
 session_start();
-// Username-i session-dan alırıq
 $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Unknown User';
 ?>
 <!DOCTYPE html>
@@ -19,7 +18,6 @@ $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Unknown User
 <body>
 <h1>Video Call</h1>
     <div class="videos">
-        <!-- Yerli Video -->
         <div class="video-container">
             <video id="localVideo" autoplay muted></video>
             <div class="username">
@@ -27,7 +25,6 @@ $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Unknown User
             </div>
         </div>
         
-        <!-- Uzaqdan Video -->
         <div class="video-container">
             <video id="remoteVideo" autoplay></video>
             <div class="username" id="remote-username">
@@ -96,7 +93,6 @@ $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Unknown User
         }
 
         function handleOffer(offer, remoteUsername) {
-            // Vəziyyəti yoxlayırıq: artıq bağlantı varsa təkrar etməyə ehtiyac yoxdur
             if (peerConnection.signalingState !== "stable") {
                 console.warn("Connection is not stable, ignoring new offer.");
                 return;
@@ -118,7 +114,6 @@ $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Unknown User
                     console.error("Error handling offer:", error);
                 });
 
-            // Uzaq istifadəçinin adını göstər
             remoteUsernameDiv.textContent = remoteUsername;
         }
 
@@ -131,7 +126,6 @@ $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'Unknown User
             peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
         }
 
-        // İlk istifadəçi avtomatik zəng edir
         setTimeout(makeCall, 1000);
     </script>
 </body>

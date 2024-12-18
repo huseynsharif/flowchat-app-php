@@ -19,9 +19,8 @@ class VideoCallServer implements MessageComponentInterface {
     public function onMessage(ConnectionInterface $from, $msg) {
         echo "Mesaj alındı: {$msg}\n";
 
-        // Gələn siqnal məlumatını digər müştərilərə ötür
         foreach ($this->clients as $client) {
-            if ($from !== $client) { // Özünə göndərmə
+            if ($from !== $client) { 
                 $client->send($msg);
             }
         }
@@ -48,7 +47,7 @@ $server = IoServer::factory(
             new VideoCallServer()
         )
     ),
-    8081 // Port nömrəsi
+    8081 
 );
 
 echo "Video zəng serveri 8081 portunda işə düşdü...\n";
