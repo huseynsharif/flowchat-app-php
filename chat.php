@@ -10,7 +10,6 @@ require 'db.php';
 
 try {
 
-    // Mesajları DB-dən gətir
     $stmt = $pdo->query("SELECT messages.message, messages.created_at, users.username 
                          FROM messages 
                          JOIN users ON messages.user_id = users.id 
@@ -30,6 +29,7 @@ try {
     <link rel="stylesheet" href="chat.css">
 </head>
 <body>
+    <h1 class="title">FlowChat</h1>
     <h1>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h1>
     <div id="chat-box" class="chat-box">
          

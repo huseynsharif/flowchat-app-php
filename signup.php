@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="signup.css">
 </head>
 <body>
+
     <form method="POST" action="signup.php">
         <input type="text" name="username" placeholder="Username" required><br>
         <input type="email" name="email" placeholder="Email" required><br>

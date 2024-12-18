@@ -11,7 +11,7 @@ class ChatServer implements MessageComponentInterface {
 
     public function __construct($pdo) {
         $this->clients = new \SplObjectStorage;
-        $this->pdo = $pdo; // PDO bağlantısını təyin edirik
+        $this->pdo = $pdo;
     }
 
     public function onOpen(ConnectionInterface $conn) {

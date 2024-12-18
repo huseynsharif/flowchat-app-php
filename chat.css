@@ -25,9 +25,15 @@ h1 {
     color: #444;
 }
 
+.title{
+    font-size: 48px;
+    color: #3a0085;
+    margin-bottom: 50px;
+}
+
 /* Chat Box Styling */
 .chat-box {
-    height: 300px;
+    height: 500px;
     width: 100%;
     max-width: 500px;
     overflow-y: auto;
