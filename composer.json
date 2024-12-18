@@ -1,5 +1,5 @@
 {
     "require": {
-        "cboden/ratchet": "v0.4"
+        "cboden/ratchet": "^0.4.2"
     }
 }
